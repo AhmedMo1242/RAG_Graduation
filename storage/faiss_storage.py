@@ -2,6 +2,8 @@ import faiss
 import numpy as np
 import uuid
 from datetime import datetime
+from utils.config import FAISS_STORAGE_PATH
+import os
 
 def generate_fake_embeddings(text):
     """
@@ -15,7 +17,7 @@ def generate_fake_embeddings(text):
     """
     return [ord(char) for char in text]
 
-def save_to_faiss(document, model, index):
+def save_to_faiss(document, model, index, unique_id, embeddings):
     """
     Save a document to FAISS with additional fields.
 
@@ -23,6 +25,8 @@ def save_to_faiss(document, model, index):
         document (dict): The document to be saved. Must contain a 'domain' field.
         model (str): The model name to be included in the index name.
         index (faiss.Index): The FAISS index to save the embeddings to.
+        unique_id (str): The unique ID to be used for the document.
+        embeddings (list): The embeddings to be saved.
 
     Raises:
         ValueError: If the document does not contain a 'domain' field.
@@ -34,10 +38,7 @@ def save_to_faiss(document, model, index):
     # Add additional fields
     document['timestamp'] = datetime.utcnow().isoformat()
     document['model'] = model
-    document['unique_id'] = str(uuid.uuid4())
-    
-    # Generate fake embeddings for the text
-    embeddings = generate_fake_embeddings(document['text'])
+    document['unique_id'] = unique_id
     
     # Ensure the embeddings match the dimension of the FAISS index
     dimension = index.d
@@ -54,27 +55,31 @@ def save_to_faiss(document, model, index):
     index.add(embeddings)
     print(f"Document saved to FAISS index with ID: {document['unique_id']}")
 
-def save_index_to_disk(index, file_path):
+def save_index_to_disk(index, domain, model):
     """
-    Save the FAISS index to disk.
+    Save the FAISS index to disk with the name domain_model.
 
     Args:
         index (faiss.Index): The FAISS index to save.
-        file_path (str): The file path to save the index to.
+        domain (str): The domain name.
+        model (str): The model name.
     """
+    file_path = os.path.join(FAISS_STORAGE_PATH, f"{domain}_{model}.index")
     faiss.write_index(index, file_path)
     print(f"FAISS index saved to {file_path}")
 
-def load_index_from_disk(file_path):
+def load_index_from_disk(domain, model):
     """
     Load the FAISS index from disk.
 
     Args:
-        file_path (str): The file path to load the index from.
+        domain (str): The domain name.
+        model (str): The model name.
 
     Returns:
         faiss.Index: The loaded FAISS index.
     """
+    file_path = os.path.join(FAISS_STORAGE_PATH, f"{domain}_{model}.index")
     index = faiss.read_index(file_path)
     print(f"FAISS index loaded from {file_path}")
     return index
