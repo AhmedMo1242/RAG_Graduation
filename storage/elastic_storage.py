@@ -102,7 +102,7 @@ def text_search(es, query, index_name, k=5):
             body={
                 "query": {
                     "match": {
-                        "text": query
+                        "data": query
                     }
                 },
                 "sort": [

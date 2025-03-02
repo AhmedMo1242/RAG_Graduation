@@ -14,3 +14,6 @@ ELASTICSEARCH_PASSWORD = "AYRVyWwXLbFU-QylMbae"
 
 # FAISS configuration
 FAISS_STORAGE_PATH = os.path.normpath(os.path.join(BASE_DIR, "..", "storage", "faiss"))
+
+# Domain metadata configuration
+DOMAIN_METADATA_PATH = os.path.normpath(os.path.join(BASE_DIR, "..", "storage", "meta"))

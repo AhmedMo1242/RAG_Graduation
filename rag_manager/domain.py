@@ -1,4 +1,4 @@
-from utils.helpers import sync_json_to_es_faiss
+from utils.helpers import sync_json_to_es_faiss, split_text_into_chunks
 from storage.json_storage import save_to_json
 from storage.faiss_storage import save_to_faiss, get_top_k_from_faiss, generate_fake_embeddings
 from storage.elastic_storage import save_to_elasticsearch, text_search, initialize_elasticsearch
@@ -6,33 +6,34 @@ from utils.id_generator import generate_unique_id
 from datetime import datetime
 
 class RAGDomain:
-    def __init__(self, domain_name: str, model_name: str):
+    def __init__(self, domain_name: str, model_name: str, chunk_size=500, overlap=50,embedding_size=128):
         """Initialize a domain with Elasticsearch collections and FAISS index."""
         self.domain_name = domain_name
         self.model_name = model_name
-        self.faiss_index, self.es = self.load()
+        self.chunk_size = chunk_size
+        self.overlap = overlap 
+        self.faiss_index, self.es,self.embedding_size = self.load(embedding_size)
 
-    def load(self):
+    def load(self,embedding_size=128):
         """Load data from JSON to Elasticsearch and FAISS."""
         es = initialize_elasticsearch()
-        faiss_index, es = sync_json_to_es_faiss(es, self.domain_name, self.model_name)
-        return faiss_index, es
+        faiss_index, es, embedding_size = sync_json_to_es_faiss(es, self.domain_name, self.model_name, embedding_size)
+        return faiss_index, es, embedding_size
 
     def add_data(self, document: dict):
         """Adds a document to JSON, then to Elasticsearch and FAISS."""
         document['domain'] = self.domain_name
         document['timestamp'] = datetime.utcnow().isoformat()
-        save_to_json(document)
+        save_to_json(document, self.domain_name)
         unique_id = generate_unique_id(self.es, f"{self.domain_name}_{self.model_name}".lower())
         document['unique_id'] = unique_id
-        embeddings = generate_fake_embeddings(document['text'])
-        save_to_elasticsearch(self.es, document, self.model_name, unique_id)
-        save_to_faiss(document, self.model_name, self.faiss_index, unique_id, embeddings)
-
-    def generate_embeddings(self, text: str):
-        """Generate fake embeddings for the text."""
-        embeddings = generate_fake_embeddings(text)
-        return embeddings
+        chunks = split_text_into_chunks(document['data'], self.chunk_size, self.overlap)
+        for chunk in chunks:
+            chunk_document = document.copy()
+            chunk_document['data'] = chunk
+            chunk_embeddings = generate_fake_embeddings(chunk)
+            save_to_elasticsearch(self.es, chunk_document, self.model_name, unique_id)
+            save_to_faiss(chunk_document, self.model_name, self.faiss_index, unique_id, chunk_embeddings)
 
     def text_search(self, query: str, k=5):
         """Performs keyword-based text search using Elasticsearch."""
@@ -41,3 +42,7 @@ class RAGDomain:
     def embedding_search(self, query_text: str, k=5):
         """Finds similar embeddings using FAISS."""
         return get_top_k_from_faiss(query_text, self.faiss_index, k)
+    
+    def hybrid_search(self, query: str, k=5):
+        """Combines keyword-based and embedding-based search."""
+

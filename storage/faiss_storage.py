@@ -51,13 +51,12 @@ def save_to_faiss(document, model, index, unique_id, embeddings):
     # Normalize embeddings for cosine similarity
     faiss.normalize_L2(embeddings)
     
-    # Add the embeddings to the FAISS index
-    index.add(embeddings)
+    # Add the embeddings to the FAISS index with unique_id as metadata
+    index.add_with_ids(embeddings, np.array([int(unique_id)]))
     print(f"Document saved to FAISS index with ID: {document['unique_id']}")
 
 def save_index_to_disk(index, domain, model):
     """
-    Save the FAISS index to disk with the name domain_model.
 
     Args:
         index (faiss.Index): The FAISS index to save.
@@ -94,7 +93,7 @@ def get_top_k_from_faiss(query_text, index, k=5):
         k (int): The number of nearest neighbors to retrieve.
 
     Returns:
-        list: The indices of the top k nearest neighbors.
+        list: The unique IDs of the top k nearest neighbors.
     """
     # Generate fake embeddings for the query text
     query_embeddings = generate_fake_embeddings(query_text)
@@ -112,5 +111,6 @@ def get_top_k_from_faiss(query_text, index, k=5):
     
     # Search the FAISS index
     distances, indices = index.search(query_embeddings, k)
-    return indices[0]
+    return [str(idx) for idx in indices[0].tolist()]
+
 

@@ -2,7 +2,7 @@ import json
 import os
 from utils.config import JSON_STORAGE_PATH
 
-def save_to_json(document):
+def save_to_json(document,domain):
     """
     Save a document to a JSON file. If a file with the same domain name exists,
     append the new document to the existing file. Otherwise, create a new file.
@@ -14,9 +14,6 @@ def save_to_json(document):
         ValueError: If the document does not contain a 'domain' field.
     """
     print(f"Saving document to JSON: {document}")
-    domain = document.get('domain')
-    if not domain:
-        raise ValueError("Document must contain a 'domain' field")
     
     file_path = os.path.join(JSON_STORAGE_PATH, f"{domain}.json")
     
