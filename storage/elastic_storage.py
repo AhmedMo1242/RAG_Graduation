@@ -66,8 +66,17 @@ def save_to_elasticsearch(es, document, model, unique_id=None):
 
     # Check if the index exists
     if not es.indices.exists(index=index_name):
-        # Create the index if it does not exist
-        es.indices.create(index=index_name)
+        es.indices.create(index=index_name, body={
+            "mappings": {
+                "properties": {
+                    "unique_id": {"type": "keyword"},
+                    "timestamp": {"type": "date"},
+                    "data": {"type": "text"},
+                    "model": {"type": "keyword"},
+                    "domain": {"type": "keyword"}
+                }
+            }
+        })
         print(f"Created new index: {index_name}")
 
     # Save the document to Elasticsearch
@@ -76,12 +85,39 @@ def save_to_elasticsearch(es, document, model, unique_id=None):
 
 def get_all_documents(es, index_name):
     try:
-        response = es.search(index=index_name, body={"query": {"match_all": {}}}, size=10000)
+        response = es.search(
+            index=index_name,
+            body={
+                "query": {
+                    "match_all": {}
+                },
+                "sort": [
+                    {"unique_id": {"order": "desc"}}
+                ],
+                "size": 10000
+            }
+        )
         documents = response['hits']['hits']
         for doc in documents:
             print(doc['_source'])
     except Exception as e:
         print(f"Failed to retrieve documents: {e}")
+        # Fallback to retrieve documents without sorting
+        try:
+            response = es.search(
+                index=index_name,
+                body={
+                    "query": {
+                        "match_all": {}
+                    },
+                    "size": 10000
+                }
+            )
+            documents = response['hits']['hits']
+            for doc in documents:
+                print(doc['_source'])
+        except Exception as e:
+            print(f"Failed to retrieve documents without sorting: {e}")
 
 def text_search(es, query, index_name, k=5):
     """
@@ -106,7 +142,7 @@ def text_search(es, query, index_name, k=5):
                     }
                 },
                 "sort": [
-                    {"timestamp": {"order": "desc"}}
+                    {"unique_id": {"order": "desc"}}
                 ],
                 "size": k
             }

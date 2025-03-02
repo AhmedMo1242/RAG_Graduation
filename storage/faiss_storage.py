@@ -57,6 +57,7 @@ def save_to_faiss(document, model, index, unique_id, embeddings):
 
 def save_index_to_disk(index, domain, model):
     """
+    Save the FAISS index to disk.
 
     Args:
         index (faiss.Index): The FAISS index to save.
@@ -80,6 +81,8 @@ def load_index_from_disk(domain, model):
     """
     file_path = os.path.join(FAISS_STORAGE_PATH, f"{domain}_{model}.index")
     index = faiss.read_index(file_path)
+    if not isinstance(index, faiss.IndexIDMap):
+        index = faiss.IndexIDMap(index)
     print(f"FAISS index loaded from {file_path}")
     return index
 
@@ -97,7 +100,6 @@ def get_top_k_from_faiss(query_text, index, k=5):
     """
     # Generate fake embeddings for the query text
     query_embeddings = generate_fake_embeddings(query_text)
-    
     # Ensure the embeddings match the dimension of the FAISS index
     dimension = index.d
     if len(query_embeddings) < dimension:
@@ -111,6 +113,8 @@ def get_top_k_from_faiss(query_text, index, k=5):
     
     # Search the FAISS index
     distances, indices = index.search(query_embeddings, k)
-    return [str(idx) for idx in indices[0].tolist()]
+    return [str(idx) for idx in indices[0].tolist() if idx != -1]
+
+
 
 

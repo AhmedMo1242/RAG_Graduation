@@ -11,6 +11,20 @@ def generate_unique_id(es, index_name):
     Returns:
         str: A unique sequential ID.
     """
+    # Ensure the index has the correct mapping
+    if not es.indices.exists(index=index_name):
+        es.indices.create(index=index_name, body={
+            "mappings": {
+                "properties": {
+                    "unique_id": {"type": "keyword"},
+                    "timestamp": {"type": "date"},
+                    "data": {"type": "text"},
+                    "model": {"type": "keyword"},
+                    "domain": {"type": "keyword"}
+                }
+            }
+        })
+    
     # Get the latest ID from Elasticsearch
     try:
         response = es.search(

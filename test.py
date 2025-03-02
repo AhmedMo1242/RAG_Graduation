@@ -2,7 +2,6 @@ from rag_manager.manager import RAGManager
 
 def main():
     manager = RAGManager()
-    print('x')
     while True:
         print("\nMenu:")
         print("1. List all domains")
@@ -10,7 +9,9 @@ def main():
         print("3. Load a domain")
         print("4. Generate a prompt")
         print("5. Add data to a domain")
-        print("6. Exit")
+        print("6. Perform text search")
+        print("7. Perform embedding search")
+        print("8. Exit")
         choice = input("Enter your choice: ")
 
         if choice == '1':
@@ -41,6 +42,18 @@ def main():
             manager.add_data(domain_name, model_name, {"data": document})
             print(f"Data added to domain {domain_name} with model {model_name}.")
         elif choice == '6':
+            domain_name = input("Enter domain name: ")
+            model_name = input("Enter model name: ")
+            query = input("Enter query: ")
+            results = manager.generate_prompt(domain_name, model_name, query, "text")
+            print(f"Text search results: {results}")
+        elif choice == '7':
+            domain_name = input("Enter domain name: ")
+            model_name = input("Enter model name: ")
+            query = input("Enter query: ")
+            results = manager.generate_prompt(domain_name, model_name, query, "embedding")
+            print(f"Hybrid search results: {results}")
+        elif choice == '8':
             break
         else:
             print("Invalid choice. Please try again.")

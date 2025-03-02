@@ -76,7 +76,7 @@ def sync_json_to_es_faiss(es, domain_name, model_name, embedding_size=128):
         faiss_index = load_index_from_disk(domain_name, model_name)
     else:
         # Create a new FAISS index if it does not exist
-        faiss_index = faiss.IndexFlatL2(embedding_size)
+        faiss_index = faiss.IndexIDMap(faiss.IndexFlatL2(embedding_size))
 
     # Check if Elasticsearch index exists
     if es.indices.exists(index=index_name):
